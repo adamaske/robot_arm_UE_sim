@@ -9,6 +9,8 @@
 UENUM()
 enum RotationAxis { X, Y, Z };
 
+class AInsertion_Target;
+class UInsertion_Target_Component;
 UCLASS()
 class ROBOT_ARM_SIMULATION_API ABrain : public AActor
 {
@@ -28,9 +30,36 @@ public:
 	 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		USceneComponent* m_Root;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		UInsertion_Target_Component* m_Target;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		UInsertion_Target_Component* m_Entry;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		UInsertion_Target_Component* m_X;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		FVector m_Target_Local_Location = { 20,0,0 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		FVector m_Entry_Local_Location = { 30,0,0 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		FVector m_X_Local_Location = { 40,0,0 };
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 	TEnumAsByte<RotationAxis> m_RotationAxis = Y;
 
 	TMap<TEnumAsByte<RotationAxis>, FMatrix> m_RotationMatrices;
+public:
+	FVector GetTargetLocalLocation() {
+		return m_Target_Local_Location;
+	};
+	FVector GetEntryLocalLocation() {
+		return m_Entry_Local_Location;
+	};
+	FVector GetXLocalLocation() {
+		return m_X_Local_Location;
+	};
 
 public:
 	FMatrix GetRotationMatrix() {
@@ -66,6 +95,7 @@ public:
 
 		return m_RotationMatrices[m_RotationAxis];
 	}
+	 
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 		float m_Theta_Degrees = 90;
@@ -85,17 +115,4 @@ public:
 		return m_Theta_Degrees;
 	}
 
-private:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
-		FVector m_Local_Target = { 0,0,0 };
-public:
-	FVector GetLocalTarget() {
-		return m_Local_Target;
-	}
-	FVector GetGlobalTarget() {
-		auto p = GetActorLocation();
-		auto k = p + m_Local_Target; // ?? * rotation matrix ? 
-
-		return k;
-	}
 };

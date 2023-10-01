@@ -34,4 +34,6 @@ private:
 public:
 	ABrain* GetBrain();
 	void SetBrain(ABrain* brain);
+
+	FMatrix GetPositionMatrix(FVector position);
 };

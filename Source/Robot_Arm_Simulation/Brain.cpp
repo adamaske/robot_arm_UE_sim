@@ -2,48 +2,45 @@
 
 
 #include "Brain.h"
-
+#include "Insertion_Target.h"
+#include "Insertion_Target_Component.h"
 // Sets default values
 ABrain::ABrain()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	//Set Root
 
+	m_Root = CreateDefaultSubobject<USceneComponent>(TEXT("ROOT"));
+	SetRootComponent(m_Root);
+	//2 Child actors
+
+	m_Target = CreateDefaultSubobject<UInsertion_Target_Component>(TEXT("TARGET"));
+	m_Target->SetupAttachment(RootComponent);
+
+	m_Entry = CreateDefaultSubobject<UInsertion_Target_Component>(TEXT("ENTRY POINT"));
+	m_Entry->SetupAttachment(RootComponent);
+
+	m_X = CreateDefaultSubobject<UInsertion_Target_Component>(TEXT("X"));
+	m_X->SetupAttachment(RootComponent);
+
+	
 }
 
 // Called when the game starts or when spawned
 void ABrain::BeginPlay()
 {
 	Super::BeginPlay();
-
-	auto t = GetThetaRadians();
-	auto ct = FMath::Cos(t);
-	auto st = FMath::Sin(t);
-
-
-	auto x_rot_m = FMatrix(
-		FPlane(1, 0, 0, 0),
-		FPlane(0, ct, -st, 0),
-		FPlane(0, st, ct, 0),
-		FPlane(0, 0, 0, 1)
-	);
-	auto y_rot_m = FMatrix(
-		FPlane(ct, 0, st, 0),
-		FPlane(0, 1, 0, 0),
-		FPlane(-st, 0, ct, 0),
-		FPlane(0, 0, 0, 1)
-	);
-
-	auto z_rot_m = FMatrix(
-		FPlane(ct, -st, 0, 0),
-		FPlane(st, ct, 0, 0),
-		FPlane(0, 0, 1, 0),
-		FPlane(0, 0, 0, 0)
-	);
-
-	m_RotationMatrices.Add(X, x_rot_m);
-	m_RotationMatrices.Add(Y, y_rot_m);
-	m_RotationMatrices.Add(Z, z_rot_m);
+	
+	//Order targets
+	m_Target->SetOrder(0);
+	m_Entry->SetOrder(1);
+	m_X->SetOrder(2);
+	
+	//Set positions
+	m_Target->SetRelativeLocation(m_Target_Local_Location);
+	m_Entry->SetRelativeLocation(m_Entry_Local_Location);
+	m_X->SetRelativeLocation(m_X_Local_Location);
 }
 
 // Called every frame
