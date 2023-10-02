@@ -7,7 +7,7 @@
 #include "Brain.generated.h"
 
 UENUM()
-enum RotationAxis { X, Y, Z };
+enum RotationAxis { X, Y, Z, I};
 
 class AInsertion_Target;
 class UInsertion_Target_Component;
@@ -43,11 +43,13 @@ private:
 		FVector m_Target_Local_Location = { 20,0,0 };
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 		FVector m_Entry_Local_Location = { 30,0,0 };
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 		FVector m_X_Local_Location = { 40,0,0 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+		float m_X_Length = 1;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
-	TEnumAsByte<RotationAxis> m_RotationAxis = Y;
+	TEnumAsByte<RotationAxis> m_RotationAxis = RotationAxis::Y;
 
 	TMap<TEnumAsByte<RotationAxis>, FMatrix> m_RotationMatrices;
 public:
@@ -86,12 +88,12 @@ public:
 			FPlane(ct, -st, 0, 0),
 			FPlane(st, ct, 0, 0),
 			FPlane(0, 0, 1, 0),
-			FPlane(0, 0, 0, 0)
+			FPlane(0, 0, 0, 1)
 		);
 
-		m_RotationMatrices.Add(X, x_rot_m);
-		m_RotationMatrices.Add(Y, y_rot_m);
-		m_RotationMatrices.Add(Z, z_rot_m);
+		m_RotationMatrices.Add(RotationAxis::X, x_rot_m);
+		m_RotationMatrices.Add(RotationAxis::Y, y_rot_m);
+		m_RotationMatrices.Add(RotationAxis::Z, z_rot_m);
 
 		return m_RotationMatrices[m_RotationAxis];
 	}

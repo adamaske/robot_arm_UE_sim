@@ -37,6 +37,7 @@ void ABrain::BeginPlay()
 	m_Entry->SetOrder(1);
 	m_X->SetOrder(2);
 	
+	m_X_Local_Location = m_Entry_Local_Location + (m_Entry_Local_Location - m_Target_Local_Location) * m_X_Length;
 	//Set positions
 	m_Target->SetRelativeLocation(m_Target_Local_Location);
 	m_Entry->SetRelativeLocation(m_Entry_Local_Location);
