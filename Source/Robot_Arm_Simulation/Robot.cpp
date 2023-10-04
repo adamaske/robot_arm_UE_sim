@@ -47,9 +47,15 @@ void ARobot::BeginPlay()
 	m_Debug.Add("actual_end_effector_location", 26);
 	m_Debug.Add("end_effector_offset", 27);
 	m_Debug.Add("end_effector_error", 28);
-	m_Debug.Add("fk_end_X", 29);
-	m_Debug.Add("fk_end_Y", 30);
-	m_Debug.Add("fk_end_Z", 31);
+	m_Debug.Add("fk_end_x", 29);
+	m_Debug.Add("fk_end_y", 30);
+	m_Debug.Add("fk_end_z", 31);
+	m_Debug.Add("dh_pos", 32);
+	m_Debug.Add("acutal_end_effector_x", 33);
+	m_Debug.Add("acutal_end_effector_y", 34);
+	m_Debug.Add("acutal_end_effector_z", 35);
+	m_Debug.Add("ik_t0", 36);
+	m_Debug.Add("dh_fk_error", 37);
 	PlaceBrain();
 }
 
@@ -58,17 +64,17 @@ void ARobot::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (m_Brain) {
-		Calculate();
-	}
+	//if (m_Brain) {
+	//	Calculate();
+	//}
 }
 
-void ARobot::Calculate() {
+FVector ARobot::Calculate_Robot_Space_Target_Location() {
 
 	if (!m_Brain) {
 		// NO BRAIN
 		GEngine->AddOnScreenDebugMessage(m_Debug["No Brain"], 5, FColor::Red, FString::Printf(TEXT("NO BRAIN FOUND")));
-		return;
+		return FVector{ 0,0,0 };
 	}	
 	
 	FColor color = FColor::Cyan;
@@ -120,6 +126,8 @@ void ARobot::Calculate() {
 
 	auto ik_target_location = x_r;
 	GEngine->AddOnScreenDebugMessage(m_Debug["ik_target_location"], dur, color, FString::Printf(TEXT("ik_target_location : %s"), *ik_target_location.ToString()));
+	auto target_m = GetPositionMatrix(ik_target_location);
+	return ik_target_location;
 }
 
 
@@ -143,47 +151,98 @@ void ARobot::PlaceBrain()
 
 void ARobot::PoseRobot(FMatrix translation)
 {
-	// Solve ik function
+	//Find robot_space target location
+	FVector target = Calculate_Robot_Space_Target_Location();
 
+	//Adjustments
+	auto _t0 = t0; // +180;//0;
+	auto _t1 = t1 + -90;
+	auto _t2 = t2 + 0;
+	auto _t3 = t3 + 0;
+	auto _t4 = t4 +   0;
+						
 	float d0 = 7.15;
 	float d1 = 12.5;
 	float d2 = 12.5;
 	float d3 = 6.0;
 	float d4 = 13.2;
 	
-	auto T1 = (RotationMatrix(Z, t0 - 180) * GetPositionMatrix(FVector(0, 0, d0)));
-	auto T2 = (RotationMatrix(Y, t1) * GetPositionMatrix(FVector(0, 0, d1)));		
-	auto T3 = (RotationMatrix(Y, t2) * GetPositionMatrix(FVector(0, 0, d2)));		
-	auto T4 = (RotationMatrix(Y, t3) * GetPositionMatrix(FVector(0, 0, d3)));		
-	auto T5 = (RotationMatrix(Z, t4) * GetPositionMatrix(FVector(0, 0, d4)));	
-
+	//Translation matrices
+	auto T1 = (RotationMatrix(Z, _t0) * GetPositionMatrix(FVector(0, 0, d0)));
+	auto T2 = (RotationMatrix(Y, _t1) * GetPositionMatrix(FVector(0, 0, d1)));		
+	auto T3 = (RotationMatrix(Y, _t2) * GetPositionMatrix(FVector(0, 0, d2)));		
+	auto T4 = (RotationMatrix(Y, _t3) * GetPositionMatrix(FVector(0, 0, d3)));		
+	auto T5 = (RotationMatrix(Z, _t4) * GetPositionMatrix(FVector(0, 0, d4)));	
 	FMatrix T = T1 * T2 * T3 * T4 * T5;
+
+	//Forward Kinematics
 	FVector fk_end_effector_location = T.GetColumn(3);
-	FVector fk_end_X = T.GetColumn(0);
-	FVector fk_end_Y = T.GetColumn(1);
-	FVector fk_end_Z = T.GetColumn(2);
+	FVector fk_end_x = T.GetColumn(0);
+	FVector fk_end_y = T.GetColumn(1);
+	FVector fk_end_z = T.GetColumn(2);
 	GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_effector_location"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_effector_location : %s"), *fk_end_effector_location.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_X"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_X : %s"), *fk_end_X.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_Y"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_Y : %s"), *fk_end_Y.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_Z"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_Z : %s"), *fk_end_Z.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_x"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_X : %s"), *fk_end_x.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_y"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_Y : %s"), *fk_end_y.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_z"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_Z : %s"), *fk_end_z.ToString()));
 
-	// Apply
-	m_Base->SetRelativeRotation(FRotator(0, t0, 0));
-	m_Link_2->SetRelativeRotation(FRotator(t1, 0, 0));
-	m_Link_3->SetRelativeRotation(FRotator(t2, 0, 0));
-	m_Link_4->SetRelativeRotation(FRotator(t3, 0, 0));
-	m_End_Effector->SetRelativeRotation(FRotator(0, t4, 0));
+	//Set the joint angles
+	m_Base->SetRelativeRotation(FRotator(0, _t0, 0));
+	m_Link_2->SetRelativeRotation(FRotator(_t1, 0, 0));
+	m_Link_3->SetRelativeRotation(FRotator(_t2, 0, 0));
+	m_Link_4->SetRelativeRotation(FRotator(_t3, 0, 0));
+	m_End_Effector->SetRelativeRotation(FRotator(0, _t4, 0));
 
-	//Find erros
+	//Location
 	FVector actual_end_effector_location = m_End_Effector_Tip->GetComponentLocation() - GetActorLocation();// m_End_Effector->GetComponentLocation() - GetActorLocation();
 	FVector end_effector_offset = actual_end_effector_location-fk_end_effector_location;
 	float end_effector_error = end_effector_offset.Length(); 
-
 	GEngine->AddOnScreenDebugMessage(m_Debug["actual_end_effector_location"], 15, FColor::Cyan, FString::Printf(TEXT("actual_end_effector_location : %s"), *actual_end_effector_location.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["end_effector_offset"], 15, FColor::Cyan, FString::Printf(TEXT("end_effector_offset : %s"), *end_effector_offset.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["end_effector_error"], 15, FColor::Cyan, FString::Printf(TEXT("end_effector_error : %f"), end_effector_error));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["end_effector_offset"], 15, FColor::Cyan, FString::Printf(TEXT("end_effector_offset : %s"), *end_effector_offset.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["end_effector_error"], 15, FColor::Cyan, FString::Printf(TEXT("end_effector_error : %f"), end_effector_error));
+	
+	//Rotation
+	FVector acutal_end_effector_x = m_End_Effector_Tip->GetRightVector();
+	FVector acutal_end_effector_y = m_End_Effector_Tip->GetUpVector();
+	FVector acutal_end_effector_z = m_End_Effector_Tip->GetForwardVector();
+	//GEngine->AddOnScreenDebugMessage(m_Debug["acutal_end_effector_x"], 15, FColor::Cyan, FString::Printf(TEXT("acutal_end_effector_x : %s"), *acutal_end_effector_x.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["acutal_end_effector_y"], 15, FColor::Cyan, FString::Printf(TEXT("acutal_end_effector_y : %s"), *acutal_end_effector_y.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["acutal_end_effector_z"], 15, FColor::Cyan, FString::Printf(TEXT("acutal_end_effector_z : %s"), *acutal_end_effector_z.ToString()));
 
+	//Inverse Kinematics
 
+	//Denavit Hartenberg parameters
+	DH_param dh_p_0 = {t0, 90, 0, 7.15 };
+	DH_param dh_p_1 = {t1, 0, 12.5, 0};
+	DH_param dh_p_2 = {t2, 0, 12.5, 0};
+	DH_param dh_p_3 = {t3, 0, 19.2, 0};
+	
+	//DH translation matrices
+	auto dh0 = DH_TranslationMatrix(dh_p_0);
+	auto dh1 = DH_TranslationMatrix(dh_p_1);
+	auto dh2 = DH_TranslationMatrix(dh_p_2);
+	auto dh3 = DH_TranslationMatrix(dh_p_3);
+	auto dh_T = dh0 * dh1 * dh2 * dh3;
+
+	//End location DH FK model
+	auto dh_pos = dh_T.GetColumn(3);
+	GEngine->AddOnScreenDebugMessage(m_Debug["dh_pos"], 15, FColor::Cyan, FString::Printf(TEXT("dh_pos : %s"), *dh_pos.ToString()));
+
+	//Find error
+	auto dh_fk_error = (actual_end_effector_location - dh_pos).Length();
+	GEngine->AddOnScreenDebugMessage(m_Debug["dh_fk_error"], 15, FColor::Cyan, FString::Printf(TEXT("dh_fk_error : %f"), dh_fk_error));
+
+	float p_r = FMath::Sqrt((target.X * target.X) + (target.Y * target.Y));
+	auto r_3 = p_r;
+	auto z_3 = target.Z - d0;
+
+	//phi = t1 + t2 + t3
+	//auto phi = 0 + 0 + 0;
+	//auto r_2 = r_3 - 
+	//auto t_3 = FMath::Acos(()/ (2*dh_p_1.alpha*))
+	////t0 = found
+	//if X = 5 and Y = 3, then t0 = atan2(5, 3);
+	float ik_t0 = FMath::Atan2(fk_end_effector_location.X, fk_end_effector_location.Y);
+	GEngine->AddOnScreenDebugMessage(m_Debug["ik_t0"], 15, FColor::Cyan, FString::Printf(TEXT("ik_t0 : %f"), ik_t0));
 
 }
 
@@ -230,6 +289,22 @@ FMatrix ARobot::RotationMatrix(RotationAxis axis, float theta)
 	
 
 	return m;
+}
+
+FMatrix ARobot::DH_TranslationMatrix(DH_param dh)
+{
+	auto t = FMath::DegreesToRadians(dh.t);
+	auto alpha =FMath::DegreesToRadians( dh.alpha);
+	auto r = dh.r;
+	auto d = dh.d;
+
+	auto mat = FMatrix(
+		FPlane(cos(t), -sin(t)*cos(alpha), sin(t)*sin(alpha), r*cos(t)),
+		FPlane(sin(t), cos(t)*cos(alpha), -cos(t)*sin(alpha), r*sin(t)),
+		FPlane(0, sin(alpha), cos(alpha), d),
+		FPlane(0, 0, 0, 1)
+	);
+	return mat;
 }
 
 FMatrix ARobot::GetPositionMatrix(FVector position)

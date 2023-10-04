@@ -6,6 +6,13 @@
 #include "GameFramework/Actor.h"
 #include "Robot.generated.h"
 
+struct DH_param {
+	float t = 0;
+	float alpha = 0;
+	float r = 0;
+	float d = 0;
+};
+
 class ABrain;
 enum RotationAxis;
 UCLASS()
@@ -25,7 +32,6 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void Calculate();
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 		UStaticMeshComponent* m_Base;
@@ -68,6 +74,9 @@ private:
 
 	TMap<FString, int> m_Debug;
 public:
+
+	FVector Calculate_Robot_Space_Target_Location();
+
 	ABrain* GetBrain();
 	void SetBrain(ABrain* brain);
 
@@ -79,4 +88,6 @@ public:
 	void PoseRobot(FMatrix translation);
 	
 	FMatrix RotationMatrix(RotationAxis axis, float theta);
+
+	FMatrix DH_TranslationMatrix(DH_param dh);
 };
