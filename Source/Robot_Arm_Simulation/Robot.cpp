@@ -55,7 +55,16 @@ void ARobot::BeginPlay()
 	m_Debug.Add("acutal_end_effector_y", 34);
 	m_Debug.Add("acutal_end_effector_z", 35);
 	m_Debug.Add("ik_t0", 36);
-	m_Debug.Add("dh_fk_error", 37);
+	m_Debug.Add("dh_fk_error", 37); 
+	
+	m_Debug.Add("dh_0", 38); 
+	m_Debug.Add("dh_1", 39); 
+	m_Debug.Add("dh_2", 40); 
+	m_Debug.Add("dh_3", 41);
+	
+	
+	
+	
 	PlaceBrain();
 }
 
@@ -155,11 +164,11 @@ void ARobot::PoseRobot(FMatrix translation)
 	FVector target = Calculate_Robot_Space_Target_Location();
 
 	//Adjustments
-	auto _t0 = t0; // +180;//0;
-	auto _t1 = t1 + -90;
-	auto _t2 = t2 + 0;
-	auto _t3 = t3 + 0;
-	auto _t4 = t4 +   0;
+	auto _t0 = t0;// + 180;// +180;//0;
+	auto _t1 = t1;//-90;//+ -90;
+	auto _t2 = t2;//-90;// - 90;
+	auto _t3 = t3;//-90;// - 90;
+	auto _t4 = t4;//;// -90;// +0;
 						
 	float d0 = 7.15;
 	float d1 = 12.5;
@@ -186,11 +195,11 @@ void ARobot::PoseRobot(FMatrix translation)
 	//GEngine->AddOnScreenDebugMessage(m_Debug["fk_end_z"], 15, FColor::Cyan, FString::Printf(TEXT("fk_end_Z : %s"), *fk_end_z.ToString()));
 
 	//Set the joint angles
-	m_Base->SetRelativeRotation(FRotator(0, _t0, 0));
-	m_Link_2->SetRelativeRotation(FRotator(_t1, 0, 0));
-	m_Link_3->SetRelativeRotation(FRotator(_t2, 0, 0));
-	m_Link_4->SetRelativeRotation(FRotator(_t3, 0, 0));
-	m_End_Effector->SetRelativeRotation(FRotator(0, _t4, 0));
+	m_Base->SetRelativeRotation(FRotator(0, t0, 0));
+	m_Link_2->SetRelativeRotation(FRotator(t1, 0, 0));
+	m_Link_3->SetRelativeRotation(FRotator(t2, 0, 0));
+	m_Link_4->SetRelativeRotation(FRotator(t3, 0, 0));
+	m_End_Effector->SetRelativeRotation(FRotator(90, t4, 0));
 
 	//Location
 	FVector actual_end_effector_location = m_End_Effector_Tip->GetComponentLocation() - GetActorLocation();// m_End_Effector->GetComponentLocation() - GetActorLocation();
@@ -211,22 +220,33 @@ void ARobot::PoseRobot(FMatrix translation)
 	//Inverse Kinematics
 
 	//Denavit Hartenberg parameters
-	DH_param dh_p_0 = {t0, 90, 0, 7.15 };
-	DH_param dh_p_1 = {t1, 0, 12.5, 0};
-	DH_param dh_p_2 = {t2, 0, 12.5, 0};
-	DH_param dh_p_3 = {t3, 0, 19.2, 0};
+	DH_param dh_p_0 = {t0, -90, 0, 7.15 };
+	DH_param dh_p_1 = {_t1,	0, 12.5, 0};
+	DH_param dh_p_2 = {_t2, 0, 12.5, 0 };
+	DH_param dh_p_3 = {_t3, 0, 19.2, 0};
 	
 	//DH translation matrices
 	auto dh0 = DH_TranslationMatrix(dh_p_0);
 	auto dh1 = DH_TranslationMatrix(dh_p_1);
 	auto dh2 = DH_TranslationMatrix(dh_p_2);
 	auto dh3 = DH_TranslationMatrix(dh_p_3);
-	auto dh_T = dh0 * dh1 * dh2 * dh3;
+	auto dh_T = dh0 * dh1 * dh2 *dh3;// *dh1* dh2* dh3;
 
 	//End location DH FK model
 	auto dh_pos = dh_T.GetColumn(3);
 	GEngine->AddOnScreenDebugMessage(m_Debug["dh_pos"], 15, FColor::Cyan, FString::Printf(TEXT("dh_pos : %s"), *dh_pos.ToString()));
 
+	auto dh_0 = (dh0).GetColumn(3);
+	auto dh_1 = (dh0*dh1).GetColumn(3);
+	auto dh_2 = (dh0*dh1*dh2).GetColumn(3);
+	auto dh_3 = (dh0 * dh1 * dh2*dh3).GetColumn(3);
+	GEngine->AddOnScreenDebugMessage(m_Debug["dh_0"], 15, FColor::Cyan, FString::Printf(TEXT("dh_0 : %s"), *dh_0.ToString()));
+	GEngine->AddOnScreenDebugMessage(m_Debug["dh_1"], 15, FColor::Cyan, FString::Printf(TEXT("dh_1 : %s"), *dh_1.ToString()));
+	GEngine->AddOnScreenDebugMessage(m_Debug["dh_2"], 15, FColor::Cyan, FString::Printf(TEXT("dh_2 : %s"), *dh_2.ToString()));
+	GEngine->AddOnScreenDebugMessage(m_Debug["dh_3"], 15, FColor::Cyan, FString::Printf(TEXT("dh_3 : %s"), *dh_3.ToString()));
+
+	//auto dh_pos = dh_T.GetColumn(3);
+	
 	//Find error
 	auto dh_fk_error = (actual_end_effector_location - dh_pos).Length();
 	GEngine->AddOnScreenDebugMessage(m_Debug["dh_fk_error"], 15, FColor::Cyan, FString::Printf(TEXT("dh_fk_error : %f"), dh_fk_error));
@@ -298,11 +318,15 @@ FMatrix ARobot::DH_TranslationMatrix(DH_param dh)
 	auto r = dh.r;
 	auto d = dh.d;
 
+	auto ct = cos(t);
+	auto st = sin(t);
+
 	auto mat = FMatrix(
-		FPlane(cos(t), -sin(t)*cos(alpha), sin(t)*sin(alpha), r*cos(t)),
-		FPlane(sin(t), cos(t)*cos(alpha), -cos(t)*sin(alpha), r*sin(t)),
-		FPlane(0, sin(alpha), cos(alpha), d),
-		FPlane(0, 0, 0, 1)
+		FPlane(ct, -st*cos(alpha), st*sin(alpha), r*ct),
+		FPlane(st, ct*cos(alpha), -ct*sin(alpha), r*st),
+		FPlane(0, st*alpha, ct*alpha, d),
+		FPlane(0,0,0,1)
+	
 	);
 	return mat;
 }
