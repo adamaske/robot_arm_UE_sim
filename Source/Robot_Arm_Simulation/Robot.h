@@ -13,6 +13,54 @@ struct DH_param {
 	float d = 0;
 };
 
+UENUM(BlueprintType)
+enum EPose_Mode{ANGLE, IK};
+
+USTRUCT(BlueprintType)
+struct FRobot_Pose {
+	GENERATED_BODY()
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		TEnumAsByte<EPose_Mode> m_Mode = EPose_Mode::ANGLE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float m_t0 = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float m_t1 = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float m_t2 = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float m_t3 = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		float m_t4 = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FMatrix m_Target_Matrix;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FVector m_Target_Location;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FVector m_Target_Orientation_X;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FVector m_Target_Orientation_Y;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		FVector m_Target_Orientation_Z;
+};
+
+USTRUCT(BlueprintType)
+struct FRobot_Pose_Report {
+	GENERATED_BODY()
+public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector m_Actual_Location = { 0,0,0 };
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FVector m_DH_FK_Location = { 0,0,0 };
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float m_Error = 0;
+};
+
 class ABrain;
 enum RotationAxis;
 UCLASS()
@@ -32,6 +80,19 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	//Testing
+private:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	bool m_Test_Run = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	int m_Runs = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	int m_Total = 0;
+	//UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	float m_Avg_Error = 0;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	float m_Max_Avg_Error = 1;
+	void Test_Runs();
 private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 		UStaticMeshComponent* m_Base;
@@ -85,7 +146,7 @@ public:
 	FMatrix GetPositionMatrix(FVector position);
 
 	UFUNCTION(BlueprintCallable)
-	void PoseRobot(FMatrix translation);
+	FRobot_Pose_Report PoseRobot(FRobot_Pose pose);
 	
 	FMatrix RotationMatrix(RotationAxis axis, float theta);
 

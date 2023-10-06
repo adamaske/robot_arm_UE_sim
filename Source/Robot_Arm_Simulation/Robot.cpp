@@ -61,11 +61,21 @@ void ARobot::BeginPlay()
 	m_Debug.Add("dh_1", 39); 
 	m_Debug.Add("dh_2", 40); 
 	m_Debug.Add("dh_3", 41);
+	m_Debug.Add("l_p1", 42);
+	m_Debug.Add("l_p2", 43);
+	m_Debug.Add("l_p3", 44);
+	m_Debug.Add("l_p4", 45);
+	m_Debug.Add("avg_error", 46);
+	
+	
 	
 	
 	
 	
 	PlaceBrain();
+
+	Test_Runs();
+	
 }
 
 // Called every frame
@@ -78,6 +88,41 @@ void ARobot::Tick(float DeltaTime)
 	//}
 }
 
+void ARobot::Test_Runs()
+{
+	if (!m_Test_Run) {
+		return;
+	}
+	auto mat = RotationMatrix(RotationAxis::I, 0);
+
+	int runs = m_Runs;
+
+	auto limit = m_Max_Avg_Error;
+	float total = 0;
+	FRobot_Pose pose;
+	pose.m_Mode = EPose_Mode::ANGLE;
+
+	for (int i = 0; i < runs; i++)
+	{
+		pose.m_t0 = FMath::RandRange(1.f, 179.f);
+		pose.m_t1 = FMath::RandRange(1.f, 179.f);
+		pose.m_t2 = FMath::RandRange(1.f, 179.f);
+		pose.m_t3 = FMath::RandRange(1.f, 179.f);
+		pose.m_t4 = 0;// FMath::RandRange(1.f, 179.f);
+		//t5 = FMath::RandRange(0, 360);
+		//Generate random thetas
+
+		auto report = PoseRobot(pose);
+		total += report.m_Error;
+	}
+
+	auto avg_error = total / runs;
+	m_Avg_Error = avg_error;
+	bool success = avg_error <= limit;
+	GEngine->AddOnScreenDebugMessage(m_Debug["avg_error"], 15, success ? FColor::Green : FColor::Red, FString::Printf(TEXT("TEST RESULTS : avg_error : %f, runs : %d, limit : %f"), avg_error, runs, limit));
+
+}
+
 FVector ARobot::Calculate_Robot_Space_Target_Location() {
 
 	if (!m_Brain) {
@@ -85,7 +130,7 @@ FVector ARobot::Calculate_Robot_Space_Target_Location() {
 		GEngine->AddOnScreenDebugMessage(m_Debug["No Brain"], 5, FColor::Red, FString::Printf(TEXT("NO BRAIN FOUND")));
 		return FVector{ 0,0,0 };
 	}	
-	
+	bool debug = false;
 	FColor color = FColor::Cyan;
 	float dur = 5;
 
@@ -93,19 +138,19 @@ FVector ARobot::Calculate_Robot_Space_Target_Location() {
 	auto r_pos = GetActorLocation();
 	auto brain_pos = m_Brain->GetActorLocation();
 	auto d_pos = r_pos - brain_pos;
-	GEngine->AddOnScreenDebugMessage(m_Debug["b_pos"], dur, color, FString::Printf(TEXT("brain_pos : %s"), *brain_pos.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["delta_position"], dur, color, FString::Printf(TEXT("delta_position : %s"), *d_pos.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["b_pos"], dur, color, FString::Printf(TEXT("brain_pos : %s"), *brain_pos.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["delta_position"], dur, color, FString::Printf(TEXT("delta_position : %s"), *d_pos.ToString()));
 
 	FMatrix brain_rotation_matrix = m_Brain->GetRotationMatrix();
-	GEngine->AddOnScreenDebugMessage(m_Debug["brain_rotation_matrix"], dur, color, FString::Printf(TEXT("brain_rotation_matrix : %s"), *brain_rotation_matrix.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["brain_rotation_matrix"], dur, color, FString::Printf(TEXT("brain_rotation_matrix : %s"), *brain_rotation_matrix.ToString()));
 
 	//Local locations, therefore _l
 	auto target_l = m_Brain->GetTargetLocalLocation();
 	auto entry_l = m_Brain->GetEntryLocalLocation();
 	auto x_l = m_Brain->GetEntryLocalLocation();
-	GEngine->AddOnScreenDebugMessage(m_Debug["target_l"], dur, color, FString::Printf(TEXT("target_l : %s"), *target_l.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["entry_l"], dur, color, FString::Printf(TEXT("entry_l : %s"), *entry_l.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["x_l"], dur, color, FString::Printf(TEXT("x_l : %s"), *x_l.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["target_l"], dur, color, FString::Printf(TEXT("target_l : %s"), *target_l.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["entry_l"], dur, color, FString::Printf(TEXT("entry_l : %s"), *entry_l.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["x_l"], dur, color, FString::Printf(TEXT("x_l : %s"), *x_l.ToString()));
 
 	//Identity matrices with the locations
 	FMatrix target_mat = GetPositionMatrix(target_l);
@@ -121,20 +166,20 @@ FVector ARobot::Calculate_Robot_Space_Target_Location() {
 
 	auto x_g_mat = brain_rotation_matrix * x_mat;
 	auto x_g = x_g_mat.GetColumn(3) + brain_pos;
-	GEngine->AddOnScreenDebugMessage(m_Debug["target_g"], dur, color, FString::Printf(TEXT("target_g : %s"), *target_g.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["entry_g"]	, dur, color, FString::Printf(TEXT("entry_g : %s"), *entry_g.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["x_g"]		, dur, color, FString::Printf(TEXT("x_g : %s"), *x_g.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["target_g"], dur, color, FString::Printf(TEXT("target_g : %s"), *target_g.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["entry_g"]	, dur, color, FString::Printf(TEXT("entry_g : %s"), *entry_g.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["x_g"]		, dur, color, FString::Printf(TEXT("x_g : %s"), *x_g.ToString()));
 
 	//Robot space
 	auto target_r = target_g - r_pos;
 	auto entry_r = entry_g - r_pos;
 	auto x_r = x_g - r_pos;
-	GEngine->AddOnScreenDebugMessage(m_Debug["target_r"], dur, color, FString::Printf(TEXT("target_r : %s"), *target_r.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["entry_r"], dur, color, FString::Printf(TEXT("entry_r : %s"), *entry_r.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["x_r"], dur, color, FString::Printf(TEXT("x_r : %s"), *x_r.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["target_r"], dur, color, FString::Printf(TEXT("target_r : %s"), *target_r.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["entry_r"], dur, color, FString::Printf(TEXT("entry_r : %s"), *entry_r.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["x_r"], dur, color, FString::Printf(TEXT("x_r : %s"), *x_r.ToString()));
 
 	auto ik_target_location = x_r;
-	GEngine->AddOnScreenDebugMessage(m_Debug["ik_target_location"], dur, color, FString::Printf(TEXT("ik_target_location : %s"), *ik_target_location.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["ik_target_location"], dur, color, FString::Printf(TEXT("ik_target_location : %s"), *ik_target_location.ToString()));
 	auto target_m = GetPositionMatrix(ik_target_location);
 	return ik_target_location;
 }
@@ -158,24 +203,35 @@ void ARobot::PlaceBrain()
 }
 
 
-void ARobot::PoseRobot(FMatrix translation)
+FRobot_Pose_Report ARobot::PoseRobot(FRobot_Pose pose)
 {
-	//Find robot_space target location
-	FVector target = Calculate_Robot_Space_Target_Location();
-
-	//Adjustments
-	auto _t0 = t0;// + 180;// +180;//0;
-	auto _t1 = t1;//-90;//+ -90;
-	auto _t2 = t2;//-90;// - 90;
-	auto _t3 = t3;//-90;// - 90;
-	auto _t4 = t4;//;// -90;// +0;
-						
 	float d0 = 7.15;
 	float d1 = 12.5;
 	float d2 = 12.5;
-	float d3 = 6.0;
+	float d3 = 12.5;//ACTUALLY 6.0
 	float d4 = 13.2;
-	
+
+
+	//Find robot_space target location
+	FVector target = Calculate_Robot_Space_Target_Location();
+
+	if (pose.m_Mode == EPose_Mode::ANGLE) {
+		t0 = pose.m_t0;
+		t1 = pose.m_t1;
+		t2 = pose.m_t2;
+		t3 = pose.m_t3;
+		t4 = pose.m_t4;
+
+
+	}
+
+	//Adjustments
+	auto _t0 = t0;// + 180;// +180;//0;
+	auto _t1 = t1 + 90;//-90;//+ -90;
+	auto _t2 = t2;//-90;// - 90;
+	auto _t3 = t3;;//-90;// - 90;
+	auto _t4 = t4;//;// -90;// +0;
+						
 	//Translation matrices
 	auto T1 = (RotationMatrix(Z, _t0) * GetPositionMatrix(FVector(0, 0, d0)));
 	auto T2 = (RotationMatrix(Y, _t1) * GetPositionMatrix(FVector(0, 0, d1)));		
@@ -199,7 +255,7 @@ void ARobot::PoseRobot(FMatrix translation)
 	m_Link_2->SetRelativeRotation(FRotator(t1, 0, 0));
 	m_Link_3->SetRelativeRotation(FRotator(t2, 0, 0));
 	m_Link_4->SetRelativeRotation(FRotator(t3, 0, 0));
-	m_End_Effector->SetRelativeRotation(FRotator(90, t4, 0));
+	m_End_Effector->SetRelativeRotation(FRotator(-90, t4, 0));
 
 	//Location
 	FVector actual_end_effector_location = m_End_Effector_Tip->GetComponentLocation() - GetActorLocation();// m_End_Effector->GetComponentLocation() - GetActorLocation();
@@ -220,18 +276,19 @@ void ARobot::PoseRobot(FMatrix translation)
 	//Inverse Kinematics
 
 	//Denavit Hartenberg parameters
-	DH_param dh_p_0 = {t0, -90, 0, 7.15 };
-	DH_param dh_p_1 = {_t1,	0, 12.5, 0};
-	DH_param dh_p_2 = {_t2, 0, 12.5, 0 };
-	DH_param dh_p_3 = {_t3, 0, 19.2, 0};
+	DH_param dh_p_0 = {t0, 90, 0, d0};
+	DH_param dh_p_1 = {t1, 0, d1, 0};	
+	DH_param dh_p_2 = {t2, 0, d2, 0 };
+	DH_param dh_p_3 = {t3, 0, d3 + d4, 0};
 	
 	//DH translation matrices
-	auto dh0 = DH_TranslationMatrix(dh_p_0);
-	auto dh1 = DH_TranslationMatrix(dh_p_1);
-	auto dh2 = DH_TranslationMatrix(dh_p_2);
-	auto dh3 = DH_TranslationMatrix(dh_p_3);
-	auto dh_T = dh0 * dh1 * dh2 *dh3;// *dh1* dh2* dh3;
-
+	auto dh0 =DH_TranslationMatrix(dh_p_0);
+	auto dh1 =DH_TranslationMatrix(dh_p_1);
+	auto dh2 =DH_TranslationMatrix(dh_p_2);
+	auto dh3 =DH_TranslationMatrix(dh_p_3);
+	auto dh_T = ((dh0 * dh1)* dh2 )*dh3;// *dh1* dh2* dh3;
+	
+	
 	//End location DH FK model
 	auto dh_pos = dh_T.GetColumn(3);
 	GEngine->AddOnScreenDebugMessage(m_Debug["dh_pos"], 15, FColor::Cyan, FString::Printf(TEXT("dh_pos : %s"), *dh_pos.ToString()));
@@ -240,10 +297,18 @@ void ARobot::PoseRobot(FMatrix translation)
 	auto dh_1 = (dh0*dh1).GetColumn(3);
 	auto dh_2 = (dh0*dh1*dh2).GetColumn(3);
 	auto dh_3 = (dh0 * dh1 * dh2*dh3).GetColumn(3);
-	GEngine->AddOnScreenDebugMessage(m_Debug["dh_0"], 15, FColor::Cyan, FString::Printf(TEXT("dh_0 : %s"), *dh_0.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["dh_1"], 15, FColor::Cyan, FString::Printf(TEXT("dh_1 : %s"), *dh_1.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["dh_2"], 15, FColor::Cyan, FString::Printf(TEXT("dh_2 : %s"), *dh_2.ToString()));
-	GEngine->AddOnScreenDebugMessage(m_Debug["dh_3"], 15, FColor::Cyan, FString::Printf(TEXT("dh_3 : %s"), *dh_3.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["dh_0"], 15, FColor::Cyan, FString::Printf(TEXT("dh_0 : %s"), *dh_0.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["dh_1"], 15, FColor::Cyan, FString::Printf(TEXT("dh_1 : %s"), *dh_1.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["dh_2"], 15, FColor::Cyan, FString::Printf(TEXT("dh_2 : %s"), *dh_2.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["dh_3"], 15, FColor::Cyan, FString::Printf(TEXT("dh_3 : %s"), *dh_3.ToString()));
+	auto l_p1 = m_Link_2->GetComponentLocation() - GetActorLocation();
+	auto l_p2 = m_Link_3->GetComponentLocation() - GetActorLocation();
+	auto l_p3 = m_Link_4->GetComponentLocation() - GetActorLocation();
+	auto l_p4 = m_End_Effector->GetComponentLocation() - GetActorLocation();
+	//GEngine->AddOnScreenDebugMessage(m_Debug["l_p1"], 15, FColor::Cyan, FString::Printf(TEXT("l_p1 : %s"), *l_p1.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["l_p2"], 15, FColor::Cyan, FString::Printf(TEXT("l_p2 : %s"), *l_p2.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["l_p3"], 15, FColor::Cyan, FString::Printf(TEXT("l_p3 : %s"), *l_p3.ToString()));
+	//GEngine->AddOnScreenDebugMessage(m_Debug["l_p4"], 15, FColor::Cyan, FString::Printf(TEXT("l_p4 : %s"), *l_p4.ToString()));
 
 	//auto dh_pos = dh_T.GetColumn(3);
 	
@@ -263,6 +328,13 @@ void ARobot::PoseRobot(FMatrix translation)
 	//if X = 5 and Y = 3, then t0 = atan2(5, 3);
 	float ik_t0 = FMath::Atan2(fk_end_effector_location.X, fk_end_effector_location.Y);
 	GEngine->AddOnScreenDebugMessage(m_Debug["ik_t0"], 15, FColor::Cyan, FString::Printf(TEXT("ik_t0 : %f"), ik_t0));
+
+	auto report = FRobot_Pose_Report();
+	report.m_Actual_Location = actual_end_effector_location;
+	report.m_DH_FK_Location = dh_pos;
+	report.m_Error = dh_fk_error;
+
+	return report;
 
 }
 
@@ -321,13 +393,22 @@ FMatrix ARobot::DH_TranslationMatrix(DH_param dh)
 	auto ct = cos(t);
 	auto st = sin(t);
 
+	
+
 	auto mat = FMatrix(
 		FPlane(ct, -st*cos(alpha), st*sin(alpha), r*ct),
 		FPlane(st, ct*cos(alpha), -ct*sin(alpha), r*st),
-		FPlane(0, st*alpha, ct*alpha, d),
+		FPlane(0, sin(alpha), cos(alpha), d),
 		FPlane(0,0,0,1)
 	
 	);
+	auto pX = GetPositionMatrix(FVector(r, 0, 0));
+	auto pZ = GetPositionMatrix(FVector(0, 0, d));
+	auto rX = RotationMatrix(RotationAxis::Z, dh.alpha);
+	auto rZ = RotationMatrix(RotationAxis::X, dh.t);
+
+	//mat = rZ * pZ * pX * rX;
+
 	return mat;
 }
 
