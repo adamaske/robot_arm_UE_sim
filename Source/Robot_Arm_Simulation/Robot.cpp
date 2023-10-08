@@ -104,11 +104,11 @@ void ARobot::Test_Runs()
 
 	for (int i = 0; i < runs; i++)
 	{
-		pose.m_t0 = FMath::RandRange(1.f, 179.f);
-		pose.m_t1 = FMath::RandRange(1.f, 179.f);
-		pose.m_t2 = FMath::RandRange(1.f, 179.f);
-		pose.m_t3 = FMath::RandRange(1.f, 179.f);
-		pose.m_t4 = 0;// FMath::RandRange(1.f, 179.f);
+		pose.m_t0 = FMath::RandRange(-180.f, 180.f);
+		pose.m_t1 = FMath::RandRange(-180.f, 180.f);
+		pose.m_t2 = FMath::RandRange(-180.f, 180.f);
+		pose.m_t3 = FMath::RandRange(-180.f, 180.f);
+		pose.m_t4 =  FMath::RandRange(-180.f, 180.f);
 		//t5 = FMath::RandRange(0, 360);
 		//Generate random thetas
 
@@ -226,8 +226,8 @@ FRobot_Pose_Report ARobot::PoseRobot(FRobot_Pose pose)
 	}
 
 	//Adjustments
-	auto _t0 = t0;// + 180;// +180;//0;
-	auto _t1 = t1 + 90;//-90;//+ -90;
+	auto _t0 = t0 + 180;// +180;//0;
+	auto _t1 = t1 - 90;//-90;//+ -90;
 	auto _t2 = t2;//-90;// - 90;
 	auto _t3 = t3;;//-90;// - 90;
 	auto _t4 = t4;//;// -90;// +0;
@@ -253,9 +253,9 @@ FRobot_Pose_Report ARobot::PoseRobot(FRobot_Pose pose)
 	//Set the joint angles
 	m_Base->SetRelativeRotation(FRotator(0, t0, 0));
 	m_Link_2->SetRelativeRotation(FRotator(t1, 0, 0));
-	m_Link_3->SetRelativeRotation(FRotator(t2, 0, 0));
-	m_Link_4->SetRelativeRotation(FRotator(t3, 0, 0));
-	m_End_Effector->SetRelativeRotation(FRotator(-90, t4, 0));
+	m_Link_3->SetRelativeRotation(FRotator(t2-90, 0, 0));
+	m_Link_4->SetRelativeRotation(FRotator(t3-90, 0, 0));
+	m_End_Effector->SetRelativeRotation(FRotator(0, 0, t4));
 
 	//Location
 	FVector actual_end_effector_location = m_End_Effector_Tip->GetComponentLocation() - GetActorLocation();// m_End_Effector->GetComponentLocation() - GetActorLocation();
@@ -278,15 +278,19 @@ FRobot_Pose_Report ARobot::PoseRobot(FRobot_Pose pose)
 	//Denavit Hartenberg parameters
 	DH_param dh_p_0 = {t0, 90, 0, d0};
 	DH_param dh_p_1 = {t1, 0, d1, 0};	
-	DH_param dh_p_2 = {t2, 0, d2, 0 };
-	DH_param dh_p_3 = {t3, 0, d3 + d4, 0};
-	
+	DH_param dh_p_2 = {t2-90, 0, d2, 0 };
+	DH_param dh_p_3 = {t3-90, 0, d3 + d4, 0};
+	DH_param dh_p_4 = { 0, 0, 0, 0 }; //-90, 0, d3 + d4, 0};
 	//DH translation matrices
 	auto dh0 =DH_TranslationMatrix(dh_p_0);
 	auto dh1 =DH_TranslationMatrix(dh_p_1);
 	auto dh2 =DH_TranslationMatrix(dh_p_2);
 	auto dh3 =DH_TranslationMatrix(dh_p_3);
-	auto dh_T = ((dh0 * dh1)* dh2 )*dh3;// *dh1* dh2* dh3;
+	auto dh4 = DH_TranslationMatrix(dh_p_4);
+	auto dh_T = GetPositionMatrix(FVector{ 0,0,0 }) * dh0;
+	dh_T = dh_T * dh1;
+	dh_T = dh_T * dh2; 
+	dh_T = dh_T *dh3;// *dh4;// *dh1* dh2* dh3;
 	
 	
 	//End location DH FK model
@@ -315,7 +319,7 @@ FRobot_Pose_Report ARobot::PoseRobot(FRobot_Pose pose)
 	//Find error
 	auto dh_fk_error = (actual_end_effector_location - dh_pos).Length();
 	GEngine->AddOnScreenDebugMessage(m_Debug["dh_fk_error"], 15, FColor::Cyan, FString::Printf(TEXT("dh_fk_error : %f"), dh_fk_error));
-
+	SetAccuracy(dh_fk_error);
 	float p_r = FMath::Sqrt((target.X * target.X) + (target.Y * target.Y));
 	auto r_3 = p_r;
 	auto z_3 = target.Z - d0;

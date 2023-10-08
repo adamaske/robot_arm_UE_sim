@@ -124,8 +124,15 @@ private:
 	float t3 = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
 	float t4 = 0;
-
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
+	float m_Accuracy = 1;
+	void SetAccuracy(float val) {
+		m_Accuracy = val;
+	}
+	UFUNCTION(BlueprintCallable)
+	float GetAccuracy() {
+		return m_Accuracy;
+	}
 private:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Meta = (AllowPrivateAccess))
