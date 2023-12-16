@@ -330,8 +330,9 @@ FRobot_Pose_Report ARobot::PoseRobot(FRobot_Pose pose)
 	//auto t_3 = FMath::Acos(()/ (2*dh_p_1.alpha*))
 	////t0 = found
 	//if X = 5 and Y = 3, then t0 = atan2(5, 3);
+	fk_end_effector_location.Normalize();
 	float ik_t0 = FMath::Atan2(fk_end_effector_location.X, fk_end_effector_location.Y);
-	GEngine->AddOnScreenDebugMessage(m_Debug["ik_t0"], 15, FColor::Cyan, FString::Printf(TEXT("ik_t0 : %f"), ik_t0));
+	GEngine->AddOnScreenDebugMessage(m_Debug["ik_t0"], 15, FColor::Cyan, FString::Printf(TEXT("ik_t0 : %f"), FMath::RadiansToDegrees(ik_t0)));
 
 	auto report = FRobot_Pose_Report();
 	report.m_Actual_Location = actual_end_effector_location;
